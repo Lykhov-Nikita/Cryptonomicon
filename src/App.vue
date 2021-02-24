@@ -1,6 +1,18 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
-    <div class="container">
+    <div
+      v-if="!loaded"
+      class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center">
+      <svg class="animate-spin -ml-1 mr-3 h-12 w-12 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    </div>
+
+    <div 
+      v-else
+      class="container"
+    >
       <div class="w-full my-4"></div>
       <section>
         <div class="flex">
@@ -12,13 +24,26 @@
               <input
                 v-model="ticker"
                 @keydown.enter="add"
+                @keyup="toggleSuggest"
                 type="text"
                 name="wallet"
                 id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
                 placeholder="Например DOGE"
+                autocomplete="off"
               />
             </div>
+            <div
+              v-if="suggestList.length"
+              class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
+            >
+            <span
+              v-for="s in suggestList"
+              :key="s"
+              class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+              {{ s }}
+            </span>
+          </div>
           </div>
         </div>
         <button
@@ -131,6 +156,7 @@
 </template>
 
 <script>
+const API_KEY = "13cef1876e8ca648abf2ed064dd6cc735ce0c7a9c13ecd9b38276404ad5ee398";
 export default {
   name: "App",
 
@@ -139,9 +165,20 @@ export default {
       ticker: "",
       tickers: [],
       sel: null,
-      graph: []
+      graph: [],
+      loaded: false,
+      coinList: [],
+      suggestList: []
     };
   },
+
+  async mounted() {
+    const response = await fetch("https://min-api.cryptocompare.com/data/all/coinlist?summary=true");
+    const data = await response.json();
+    this.coinList = Object.keys(data.Data);
+    this.loaded = true;
+  },
+
 
   methods: {
     add() {
@@ -153,11 +190,10 @@ export default {
       this.tickers.push(currentTicker);
       setInterval(async () => {
         const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=ce3fd966e7a1d10d65f907b20bf000552158fd3ed1bd614110baa0ac6cb57a7e`
+          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${API_KEY}`
         );
         const data = await f.json();
 
-        // currentTicker.price =  data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
         this.tickers.find(t => t.name === currentTicker.name).price =
           data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
 
@@ -166,6 +202,7 @@ export default {
         }
       }, 5000);
       this.ticker = "";
+      this.toggleSuggest()
     },
 
     select(ticker) {
@@ -183,6 +220,18 @@ export default {
       return this.graph.map(
         price => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
+    },
+
+    toggleSuggest() {
+      if (this.ticker.length < 3) { 
+        this.suggestList = [];
+        return;
+      }
+
+      const ticker = this.ticker.toUpperCase();
+      const findCoind = this.coinList.filter(el => el.includes(ticker));
+      const length = Math.min(findCoind.length, 4)
+      this.suggestList = findCoind.slice(0, length);
     }
   }
 };
