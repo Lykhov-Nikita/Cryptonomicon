@@ -40,7 +40,9 @@
             <span
               v-for="s in suggestList"
               :key="s"
-              class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+              class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
+              @click="suggestAdd(s)"
+            >
               {{ s }}
             </span>
           </div>
@@ -232,6 +234,11 @@ export default {
       const findCoind = this.coinList.filter(el => el.includes(ticker));
       const length = Math.min(findCoind.length, 4)
       this.suggestList = findCoind.slice(0, length);
+    },
+
+    suggestAdd(tiker) {
+      this.ticker = tiker;
+      this.add();
     }
   }
 };
