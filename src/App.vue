@@ -25,6 +25,7 @@
                 v-model="ticker"
                 @keydown.enter="add"
                 @keyup="toggleSuggest"
+                @keydown="hideValidation"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -46,6 +47,7 @@
               {{ s }}
             </span>
           </div>
+          <div class="text-sm text-red-600" v-if="isValid">Такой тикер уже добавлен</div>
           </div>
         </div>
         <button
@@ -170,7 +172,8 @@ export default {
       graph: [],
       loaded: false,
       coinList: [],
-      suggestList: []
+      suggestList: [],
+      isValid: false
     };
   },
 
@@ -184,8 +187,14 @@ export default {
 
   methods: {
     add() {
+      const newTicker = this.ticker.toLocaleUpperCase();
+      const hasTicker = this.tickers.find(ticker => ticker.name === newTicker);
+      if (hasTicker) {
+        this.isValid = true;
+        return;
+      }
       const currentTicker = {
-        name: this.ticker,
+        name: newTicker,
         price: "-"
       };
 
@@ -203,8 +212,10 @@ export default {
           this.graph.push(data.USD);
         }
       }, 5000);
+      
       this.ticker = "";
-      this.toggleSuggest()
+      this.toggleSuggest();
+      this.hideValidation();
     },
 
     select(ticker) {
@@ -222,6 +233,19 @@ export default {
       return this.graph.map(
         price => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
+    },
+
+    tickerChangeHandler() {
+      this.hideValidation();
+      this.toggleSuggest();
+    },
+
+    hideValidation(event) {
+      if (event?.key === 'Enter') {
+        return;
+      }
+
+      this.isValid = false;
     },
 
     toggleSuggest() {
